@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
         />
         <NavItem
           icon={<SaveIcon className="w-6 h-6" />}
-          label="Salva Modifiche"
+          label="Salva & Ripristina"
           isActive={currentView === 'salva'}
           onClick={() => setCurrentView('salva')}
         />

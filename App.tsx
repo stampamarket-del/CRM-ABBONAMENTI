@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Client, Product, Seller } from './types';
 import ClientList from './components/ClientList';
 import AddClientForm from './components/AddClientForm';
@@ -17,8 +17,8 @@ import ClientFilterBar from './components/ClientFilterBar';
 
 type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business' | 'salva';
 
-const App: React.FC = () => {
-  const [clients, setClients] = useState<Client[]>([
+const initialData = {
+  clients: [
     {
       id: '1', name: 'Mario', surname: 'Rossi', companyName: 'Rossi S.R.L', vatNumber: 'IT12345678901', address: 'Via Roma 1, 00100 Roma', email: 'mario.rossi@example.com', iban: 'IT60X0542811101000000123456', otherInfo: 'Cliente iniziale, alta priorità.',
       subscription: {
@@ -64,17 +64,67 @@ const App: React.FC = () => {
       subscriptionType: 'trial',
        productId: 'p2', sellerId: 's1',
     },
-  ]);
-  const [products, setProducts] = useState<Product[]>([
+  ],
+  products: [
     { id: 'p1', name: 'Abbonamento Base', price: 29.99 },
     { id: 'p2', name: 'Abbonamento Premium', price: 59.99 },
     { id: 'p3', name: 'Abbonamento Enterprise', price: 99.99 },
-  ]);
-  const [sellers, setSellers] = useState<Seller[]>([
+  ],
+  sellers: [
     { id: 's1', name: 'Marco Neri', commissionRate: 10 },
     { id: 's2', name: 'Laura Gialli', commissionRate: 12 },
-  ]);
+  ]
+};
+
+const STORAGE_KEY = 'crm-data';
+
+const App: React.FC = () => {
   
+  const [clients, setClients] = useState<Client[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved).clients || initialData.clients;
+      }
+    } catch (e) {
+      console.error("Failed to parse clients from localStorage", e);
+    }
+    return initialData.clients;
+  });
+
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved).products || initialData.products;
+      }
+    } catch (e) {
+      console.error("Failed to parse products from localStorage", e);
+    }
+    return initialData.products;
+  });
+
+  const [sellers, setSellers] = useState<Seller[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved).sellers || initialData.sellers;
+      }
+    } catch (e) {
+      console.error("Failed to parse sellers from localStorage", e);
+    }
+    return initialData.sellers;
+  });
+
+  useEffect(() => {
+    try {
+      const dataToSave = JSON.stringify({ clients, products, sellers });
+      localStorage.setItem(STORAGE_KEY, dataToSave);
+    } catch (e) {
+      console.error("Failed to save data to localStorage", e);
+    }
+  }, [clients, products, sellers]);
+
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isAddClientModalOpen, setAddClientModalOpen] = useState(false);
   const [isImportModalOpen, setImportModalOpen] = useState(false);
@@ -215,7 +265,7 @@ const App: React.FC = () => {
     products: 'Prodotti',
     reports: 'Report Vendite',
     business: 'Analisi Business',
-    salva: 'Salva Modifiche',
+    salva: 'Salva & Ripristina Dati',
   };
   
   const filteredAndSortedClients = useMemo(() => {

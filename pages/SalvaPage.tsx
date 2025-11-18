@@ -1,15 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { Client, Product, Seller } from '../types';
+import { Client, Product, Seller, ActivityLog } from '../types';
 import { DownloadIcon, UploadIcon } from '../components/Icons';
 
 interface SalvaPageProps {
   clients: Client[];
   products: Product[];
   sellers: Seller[];
-  onRestore: (data: { clients: Client[]; products: Product[]; sellers: Seller[] }) => void;
+  activityLog: ActivityLog[];
+  onRestore: (data: { clients: Client[]; products: Product[]; sellers: Seller[]; activityLog: ActivityLog[] }) => void;
 }
 
-const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, onRestore }) => {
+const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, activityLog, onRestore }) => {
     const [restoreFile, setRestoreFile] = useState<File | null>(null);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -20,6 +21,7 @@ const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, onRes
                 clients,
                 products,
                 sellers,
+                activityLog,
                 backupDate: new Date().toISOString(),
             };
             const jsonString = JSON.stringify(dataToSave, null, 2);
@@ -37,7 +39,7 @@ const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, onRes
             console.error("Errore durante il salvataggio del backup:", error);
             alert('Si è verificato un errore durante il salvataggio.');
         }
-    }, [clients, products, sellers]);
+    }, [clients, products, sellers, activityLog]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setFeedback(null);
@@ -60,7 +62,12 @@ const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, onRes
                 const data = JSON.parse(text);
                 // Basic validation
                 if (data && Array.isArray(data.clients) && Array.isArray(data.products) && Array.isArray(data.sellers)) {
-                    onRestore(data);
+                    onRestore({
+                        clients: data.clients,
+                        products: data.products,
+                        sellers: data.sellers,
+                        activityLog: data.activityLog || [] // Handle old backups without logs
+                    });
                     setFeedback({ type: 'success', message: 'Dati ripristinati con successo!' });
                     if(document.getElementById('restore-file-input')) {
                         (document.getElementById('restore-file-input') as HTMLInputElement).value = "";
@@ -93,7 +100,7 @@ const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, onRes
             <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
                 <h2 className="text-xl font-bold text-gray-800 mb-2">Esporta Tutti i Dati</h2>
                 <p className="text-gray-500 mb-4 text-sm">
-                    Crea un file di backup JSON con tutti i clienti, prodotti e venditori. Conservalo in un luogo sicuro.
+                    Crea un file di backup JSON con tutti i clienti, prodotti, venditori e registro attività. Conservalo in un luogo sicuro.
                 </p>
                 <button
                     onClick={handleSave}

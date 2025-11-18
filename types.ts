@@ -32,3 +32,12 @@ export interface Seller {
   name: string;
   commissionRate: number; // Percentage
 }
+
+export interface ActivityLog {
+  id: string;
+  timestamp: string; // ISO string
+  type: 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT';
+  entity: 'CLIENT' | 'PRODUCT' | 'SELLER';
+  description: string;
+  entityId?: string; // ID of the client, product, or seller
+}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Client, Product, Seller } from './types';
+import { Client, Product, Seller, ActivityLog } from './types';
 import ClientList from './components/ClientList';
 import AddClientForm from './components/AddClientForm';
 import EditClientForm from './components/EditClientForm';
@@ -10,16 +10,18 @@ import VenditoriPage from './pages/VenditoriPage';
 import ReportsPage from './pages/ReportsPage';
 import BusinessPage from './pages/BusinessPage';
 import SalvaPage from './pages/SalvaPage';
+import ActivityLogPage from './pages/ActivityLogPage';
 import { PlusCircleIcon, DownloadIcon, UploadIcon } from './components/Icons';
 import ImportClientModal from './components/ImportClientModal';
 import ClientFilterBar from './components/ClientFilterBar';
 
-type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business' | 'salva';
+type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business' | 'salva' | 'activity';
 
 const App: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch initial data from localStorage
@@ -34,6 +36,9 @@ const App: React.FC = () => {
 
       const storedSellers = localStorage.getItem('crm_sellers');
       if (storedSellers) setSellers(JSON.parse(storedSellers));
+
+      const storedActivityLog = localStorage.getItem('crm_activity_log');
+      if (storedActivityLog) setActivityLog(JSON.parse(storedActivityLog));
     } catch (error) {
       console.error("Error loading data from localStorage:", error);
     } finally {
@@ -60,6 +65,12 @@ const App: React.FC = () => {
     }
   }, [sellers, loading]);
 
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem('crm_activity_log', JSON.stringify(activityLog));
+    }
+  }, [activityLog, loading]);
+
 
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isAddClientModalOpen, setAddClientModalOpen] = useState(false);
@@ -74,10 +85,23 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState('expiry_desc');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
+  const logActivity = useCallback((type: ActivityLog['type'], entity: ActivityLog['entity'], description: string, entityId?: string) => {
+    const newLog: ActivityLog = {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      type,
+      entity,
+      description,
+      entityId
+    };
+    setActivityLog(prev => [newLog, ...prev]);
+  }, []);
+
   const addClient = useCallback((client: Omit<Client, 'id'>) => {
     const newClient: Client = { ...client, id: crypto.randomUUID() };
     setClients(prev => [...prev, newClient]);
-  }, []);
+    logActivity('CREATE', 'CLIENT', `Cliente "${newClient.name} ${newClient.surname}" aggiunto.`, newClient.id);
+  }, [logActivity]);
   
   const importClients = useCallback((newClients: Omit<Client, 'id'>[]) => {
     const clientsToImport = newClients.map(client => ({
@@ -85,55 +109,69 @@ const App: React.FC = () => {
       id: crypto.randomUUID(),
     }));
     setClients(prev => [...prev, ...clientsToImport]);
+    logActivity('IMPORT', 'CLIENT', `${clientsToImport.length} clienti importati con successo.`);
     alert(`${clientsToImport.length} clienti importati con successo!`);
-  }, []);
+  }, [logActivity]);
 
   const deleteClient = useCallback((clientId: string) => {
-    setClients(prev => prev.filter(client => client.id !== clientId));
-  }, []);
+    const clientToDelete = clients.find(c => c.id === clientId);
+    if (clientToDelete) {
+      setClients(prev => prev.filter(client => client.id !== clientId));
+      logActivity('DELETE', 'CLIENT', `Cliente "${clientToDelete.name} ${clientToDelete.surname}" eliminato.`, clientId);
+    }
+  }, [clients, logActivity]);
 
   const updateClient = useCallback((updatedClient: Client) => {
     setClients(prev => prev.map(client => client.id === updatedClient.id ? updatedClient : client));
     setEditingClient(null);
-  }, []);
+    logActivity('UPDATE', 'CLIENT', `Cliente "${updatedClient.name} ${updatedClient.surname}" aggiornato.`, updatedClient.id);
+  }, [logActivity]);
 
   const addProduct = useCallback((product: Omit<Product, 'id'>) => {
     const newProduct: Product = { ...product, id: crypto.randomUUID() };
     setProducts(prev => [...prev, newProduct]);
-  }, []);
+    logActivity('CREATE', 'PRODUCT', `Prodotto "${newProduct.name}" aggiunto.`, newProduct.id);
+  }, [logActivity]);
 
   const updateProduct = useCallback((updatedProduct: Product) => {
     setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  }, []);
+    logActivity('UPDATE', 'PRODUCT', `Prodotto "${updatedProduct.name}" aggiornato.`, updatedProduct.id);
+  }, [logActivity]);
 
   const deleteProduct = useCallback((productId: string) => {
-    if (window.confirm('Sei sicuro di voler eliminare questo prodotto? I clienti associati non avranno più un prodotto.')) {
+    const productToDelete = products.find(p => p.id === productId);
+    if (productToDelete && window.confirm('Sei sicuro di voler eliminare questo prodotto? I clienti associati non avranno più un prodotto.')) {
       setProducts(prev => prev.filter(product => product.id !== productId));
       // De-associate product from clients
       setClients(prevClients => prevClients.map(c => 
         c.productId === productId ? { ...c, productId: undefined } : c
       ));
+      logActivity('DELETE', 'PRODUCT', `Prodotto "${productToDelete.name}" eliminato.`, productId);
     }
-  }, []);
+  }, [products, logActivity]);
 
   const addSeller = useCallback((seller: Omit<Seller, 'id'>) => {
     const newSeller: Seller = { ...seller, id: crypto.randomUUID() };
     setSellers(prev => [...prev, newSeller]);
-  }, []);
+    logActivity('CREATE', 'SELLER', `Venditore "${newSeller.name}" aggiunto.`, newSeller.id);
+  }, [logActivity]);
 
   const deleteSeller = useCallback((sellerId: string) => {
-    if (window.confirm('Sei sicuro di voler eliminare questo venditore? I clienti associati non avranno più un venditore.')) {
+    const sellerToDelete = sellers.find(s => s.id === sellerId);
+    if (sellerToDelete && window.confirm('Sei sicuro di voler eliminare questo venditore? I clienti associati non avranno più un venditore.')) {
       setSellers(prev => prev.filter(seller => seller.id !== sellerId));
       // De-associate seller from clients
       setClients(prevClients => prevClients.map(c => 
         c.sellerId === sellerId ? { ...c, sellerId: undefined } : c
       ));
+      logActivity('DELETE', 'SELLER', `Venditore "${sellerToDelete.name}" eliminato.`, sellerId);
     }
-  }, []);
+  }, [sellers, logActivity]);
 
   const updateSeller = useCallback((updatedSeller: Seller) => {
     setSellers(prev => prev.map(s => s.id === updatedSeller.id ? updatedSeller : s));
-  }, []);
+    logActivity('UPDATE', 'SELLER', `Venditore "${updatedSeller.name}" aggiornato.`, updatedSeller.id);
+  }, [logActivity]);
   
   const exportToCsv = useCallback((filename: string, data: object[]) => {
     if (!data || data.length === 0) {
@@ -194,11 +232,12 @@ const App: React.FC = () => {
     exportToCsv('clienti.csv', dataToExport);
   }, [clients, products, sellers, exportToCsv]);
   
-  const restoreData = useCallback((data: { clients: Client[], products: Product[], sellers: Seller[] }) => {
+  const restoreData = useCallback((data: { clients: Client[], products: Product[], sellers: Seller[], activityLog?: ActivityLog[] }) => {
     if (window.confirm('Sei sicuro di voler ripristinare i dati? Questa operazione sovrascriverà tutti i dati attuali.')) {
       setClients(data.clients || []);
       setProducts(data.products || []);
       setSellers(data.sellers || []);
+      setActivityLog(data.activityLog || []);
       alert('Dati ripristinati con successo!');
     }
   }, []);
@@ -211,6 +250,7 @@ const App: React.FC = () => {
     reports: 'Report Vendite',
     business: 'Analisi Business',
     salva: 'Backup Dati',
+    activity: 'Registro Attività',
   };
   
   const filteredAndSortedClients = useMemo(() => {
@@ -298,7 +338,9 @@ const App: React.FC = () => {
       case 'business':
         return <BusinessPage />;
       case 'salva':
-        return <SalvaPage clients={clients} products={products} sellers={sellers} onRestore={restoreData} />;
+        return <SalvaPage clients={clients} products={products} sellers={sellers} activityLog={activityLog} onRestore={restoreData} />;
+      case 'activity':
+        return <ActivityLogPage logs={activityLog} />;
       default:
         return null;
     }

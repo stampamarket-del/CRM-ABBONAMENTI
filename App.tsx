@@ -86,6 +86,7 @@ const App: React.FC = () => {
   const [filterSellerId, setFilterSellerId] = useState('');
   const [filterSubscriptionType, setFilterSubscriptionType] = useState('');
   const [sortOrder, setSortOrder] = useState('expiry_desc');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const addClient = useCallback((client: Omit<Client, 'id'>) => {
     setClients(prev => [...prev, { ...client, id: new Date().toISOString() }]);
@@ -229,8 +230,11 @@ const App: React.FC = () => {
       const matchesProduct = filterProductId === '' || client.productId === filterProductId;
       const matchesSeller = filterSellerId === '' || client.sellerId === filterSellerId;
       const matchesSubscriptionType = filterSubscriptionType === '' || client.subscriptionType === filterSubscriptionType;
+      
+      const matchesDate = !selectedDate || new Date(client.subscription.endDate).toDateString() === selectedDate.toDateString();
 
-      return matchesSearch && matchesProduct && matchesSeller && matchesSubscriptionType;
+
+      return matchesSearch && matchesProduct && matchesSeller && matchesSubscriptionType && matchesDate;
     });
 
     switch (sortOrder) {
@@ -247,7 +251,7 @@ const App: React.FC = () => {
     }
 
     return result;
-  }, [clients, searchTerm, filterProductId, filterSellerId, filterSubscriptionType, sortOrder]);
+  }, [clients, searchTerm, filterProductId, filterSellerId, filterSubscriptionType, sortOrder, selectedDate]);
 
   const mainContent = useMemo(() => {
     switch (currentView) {
@@ -272,11 +276,14 @@ const App: React.FC = () => {
             />
             <ClientList 
               clients={filteredAndSortedClients} 
+              allClientsForCalendar={clients}
               totalClientsCount={clients.length}
               onDeleteClient={deleteClient} 
               onEditClient={setEditingClient} 
               products={products} 
-              sellers={sellers} 
+              sellers={sellers}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
             />
           </>
         );
@@ -293,7 +300,7 @@ const App: React.FC = () => {
       default:
         return null;
     }
-  }, [currentView, clients, products, sellers, deleteClient, addProduct, updateProduct, deleteProduct, addSeller, updateSeller, deleteSeller, filteredAndSortedClients, searchTerm, filterProductId, filterSellerId, sortOrder, filterSubscriptionType, restoreData]);
+  }, [currentView, clients, products, sellers, deleteClient, addProduct, updateProduct, deleteProduct, addSeller, updateSeller, deleteSeller, filteredAndSortedClients, searchTerm, filterProductId, filterSellerId, sortOrder, filterSubscriptionType, restoreData, selectedDate]);
 
   return (
     <div className="flex h-screen bg-gray-100 text-gray-800">

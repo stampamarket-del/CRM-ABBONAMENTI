@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Client, Product, Seller } from './types';
 import ClientList from './components/ClientList';
@@ -17,113 +16,50 @@ import ClientFilterBar from './components/ClientFilterBar';
 
 type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business' | 'salva';
 
-const initialData = {
-  clients: [
-    {
-      id: '1', name: 'Mario', surname: 'Rossi', companyName: 'Rossi S.R.L', vatNumber: 'IT12345678901', address: 'Via Roma 1, 00100 Roma', email: 'mario.rossi@example.com', iban: 'IT60X0542811101000000123456', otherInfo: 'Cliente iniziale, alta priorità.',
-      subscription: {
-        startDate: new Date(new Date().setDate(new Date().getDate() - 20)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(),
-      },
-      subscriptionType: 'monthly',
-      productId: 'p1', sellerId: 's1',
-    },
-    {
-      id: '2', name: 'Giulia', surname: 'Bianchi', address: 'Corso Vittorio Emanuele 10, Milano', email: 'giulia.bianchi@example.com', iban: 'IT12A0306909606100000063749', otherInfo: 'Cliente a lungo termine.',
-      subscription: {
-        startDate: new Date(new Date().setDate(new Date().getDate() - 90)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 80)).toISOString(),
-      },
-      subscriptionType: 'annual',
-      productId: 'p2', sellerId: 's2',
-    },
-     {
-      id: '4', name: 'Luca', surname: 'Verdi', companyName: 'Verdi Costruzioni', vatNumber: 'IT98765432109', address: 'Via Garibaldi 20, Torino', email: 'luca.verdi@example.com', iban: 'IT11A0200801694000105374827', otherInfo: 'Contratto in scadenza.',
-      subscription: {
-        startDate: new Date(new Date().setDate(new Date().getDate() - 335)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 25)).toISOString(),
-      },
-      subscriptionType: 'annual',
-      productId: 'p3', sellerId: 's1',
-    },
-    {
-      id: '3', name: 'Cliente', surname: 'Scaduto', address: 'Piazza Maggiore 5, Bologna', email: 'cliente.scaduto@example.com', iban: 'IT11A0200801694000105374827', otherInfo: 'Abbonamento terminato.',
-      subscription: {
-        startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() - 5)).toISOString(),
-      },
-      subscriptionType: 'monthly',
-       productId: 'p1', sellerId: 's2',
-    },
-    {
-      id: '5', name: 'Futuro', surname: 'Cliente', companyName: 'Startup Futura', vatNumber: 'IT00000000000', address: 'Via del Domani 1, Futuropoli', email: 'futuro.cliente@example.com', iban: 'IT00F00000000000000000000', otherInfo: 'Abbonamento non ancora attivo.',
-      subscription: {
-        startDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 45)).toISOString(),
-      },
-      subscriptionType: 'trial',
-       productId: 'p2', sellerId: 's1',
-    },
-  ],
-  products: [
-    { id: 'p1', name: 'Abbonamento Base', price: 29.99 },
-    { id: 'p2', name: 'Abbonamento Premium', price: 59.99 },
-    { id: 'p3', name: 'Abbonamento Enterprise', price: 99.99 },
-  ],
-  sellers: [
-    { id: 's1', name: 'Marco Neri', commissionRate: 10 },
-    { id: 's2', name: 'Laura Gialli', commissionRate: 12 },
-  ]
-};
-
-const STORAGE_KEY = 'crm-data';
-
 const App: React.FC = () => {
-  
-  const [clients, setClients] = useState<Client[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved).clients || initialData.clients;
-      }
-    } catch (e) {
-      console.error("Failed to parse clients from localStorage", e);
-    }
-    return initialData.clients;
-  });
+  const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [products, setProducts] = useState<Product[]>(() => {
+  // Fetch initial data from localStorage
+  useEffect(() => {
+    setLoading(true);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved).products || initialData.products;
-      }
-    } catch (e) {
-      console.error("Failed to parse products from localStorage", e);
-    }
-    return initialData.products;
-  });
+      const storedClients = localStorage.getItem('crm_clients');
+      if (storedClients) setClients(JSON.parse(storedClients));
 
-  const [sellers, setSellers] = useState<Seller[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved).sellers || initialData.sellers;
-      }
-    } catch (e) {
-      console.error("Failed to parse sellers from localStorage", e);
+      const storedProducts = localStorage.getItem('crm_products');
+      if (storedProducts) setProducts(JSON.parse(storedProducts));
+
+      const storedSellers = localStorage.getItem('crm_sellers');
+      if (storedSellers) setSellers(JSON.parse(storedSellers));
+    } catch (error) {
+      console.error("Error loading data from localStorage:", error);
+    } finally {
+      setLoading(false);
     }
-    return initialData.sellers;
-  });
+  }, []);
+
+  // Persist data to localStorage on change
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem('crm_clients', JSON.stringify(clients));
+    }
+  }, [clients, loading]);
 
   useEffect(() => {
-    try {
-      const dataToSave = JSON.stringify({ clients, products, sellers });
-      localStorage.setItem(STORAGE_KEY, dataToSave);
-    } catch (e) {
-      console.error("Failed to save data to localStorage", e);
+    if (!loading) {
+      localStorage.setItem('crm_products', JSON.stringify(products));
     }
-  }, [clients, products, sellers]);
+  }, [products, loading]);
+
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem('crm_sellers', JSON.stringify(sellers));
+    }
+  }, [sellers, loading]);
+
 
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [isAddClientModalOpen, setAddClientModalOpen] = useState(false);
@@ -139,13 +75,17 @@ const App: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const addClient = useCallback((client: Omit<Client, 'id'>) => {
-    setClients(prev => [...prev, { ...client, id: new Date().toISOString() }]);
+    const newClient: Client = { ...client, id: crypto.randomUUID() };
+    setClients(prev => [...prev, newClient]);
   }, []);
   
   const importClients = useCallback((newClients: Omit<Client, 'id'>[]) => {
-    const clientsToAdd = newClients.map(client => ({ ...client, id: `imported-${new Date().toISOString()}-${Math.random()}` }));
-    setClients(prev => [...prev, ...clientsToAdd]);
-    alert(`${clientsToAdd.length} clienti importati con successo!`);
+    const clientsToImport = newClients.map(client => ({
+      ...client,
+      id: crypto.randomUUID(),
+    }));
+    setClients(prev => [...prev, ...clientsToImport]);
+    alert(`${clientsToImport.length} clienti importati con successo!`);
   }, []);
 
   const deleteClient = useCallback((clientId: string) => {
@@ -158,7 +98,8 @@ const App: React.FC = () => {
   }, []);
 
   const addProduct = useCallback((product: Omit<Product, 'id'>) => {
-    setProducts(prev => [...prev, { ...product, id: `p${Date.now()}` }]);
+    const newProduct: Product = { ...product, id: crypto.randomUUID() };
+    setProducts(prev => [...prev, newProduct]);
   }, []);
 
   const updateProduct = useCallback((updatedProduct: Product) => {
@@ -168,23 +109,24 @@ const App: React.FC = () => {
   const deleteProduct = useCallback((productId: string) => {
     if (window.confirm('Sei sicuro di voler eliminare questo prodotto? I clienti associati non avranno più un prodotto.')) {
       setProducts(prev => prev.filter(product => product.id !== productId));
-      // Un-assign clients from the deleted product
-      setClients(prev => prev.map(client => 
-        client.productId === productId ? { ...client, productId: undefined } : client
+      // De-associate product from clients
+      setClients(prevClients => prevClients.map(c => 
+        c.productId === productId ? { ...c, productId: undefined } : c
       ));
     }
   }, []);
 
   const addSeller = useCallback((seller: Omit<Seller, 'id'>) => {
-    setSellers(prev => [...prev, { ...seller, id: `s${Date.now()}` }]);
+    const newSeller: Seller = { ...seller, id: crypto.randomUUID() };
+    setSellers(prev => [...prev, newSeller]);
   }, []);
 
   const deleteSeller = useCallback((sellerId: string) => {
     if (window.confirm('Sei sicuro di voler eliminare questo venditore? I clienti associati non avranno più un venditore.')) {
       setSellers(prev => prev.filter(seller => seller.id !== sellerId));
-      // Un-assign clients from the deleted seller
-      setClients(prev => prev.map(client => 
-        client.sellerId === sellerId ? { ...client, sellerId: undefined } : client
+      // De-associate seller from clients
+      setClients(prevClients => prevClients.map(c => 
+        c.sellerId === sellerId ? { ...c, sellerId: undefined } : c
       ));
     }
   }, []);
@@ -253,9 +195,12 @@ const App: React.FC = () => {
   }, [clients, products, sellers, exportToCsv]);
   
   const restoreData = useCallback((data: { clients: Client[], products: Product[], sellers: Seller[] }) => {
-    setClients(data.clients || []);
-    setProducts(data.products || []);
-    setSellers(data.sellers || []);
+    if (window.confirm('Sei sicuro di voler ripristinare i dati? Questa operazione sovrascriverà tutti i dati attuali.')) {
+      setClients(data.clients || []);
+      setProducts(data.products || []);
+      setSellers(data.sellers || []);
+      alert('Dati ripristinati con successo!');
+    }
   }, []);
 
   const viewTitles: Record<View, string> = {
@@ -265,7 +210,7 @@ const App: React.FC = () => {
     products: 'Prodotti',
     reports: 'Report Vendite',
     business: 'Analisi Business',
-    salva: 'Salva & Ripristina Dati',
+    salva: 'Backup Dati',
   };
   
   const filteredAndSortedClients = useMemo(() => {
@@ -303,7 +248,14 @@ const App: React.FC = () => {
     return result;
   }, [clients, searchTerm, filterProductId, filterSellerId, filterSubscriptionType, sortOrder, selectedDate]);
 
-  const mainContent = useMemo(() => {
+  const renderMainContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-full">
+          <div className="text-xl font-semibold">Caricamento dati...</div>
+        </div>
+      );
+    }
     switch (currentView) {
       case 'dashboard':
         return <Dashboard clients={clients} products={products} />;
@@ -350,7 +302,7 @@ const App: React.FC = () => {
       default:
         return null;
     }
-  }, [currentView, clients, products, sellers, deleteClient, addProduct, updateProduct, deleteProduct, addSeller, updateSeller, deleteSeller, filteredAndSortedClients, searchTerm, filterProductId, filterSellerId, sortOrder, filterSubscriptionType, restoreData, selectedDate]);
+  }
 
   return (
     <div className="flex h-screen bg-gray-100 text-gray-800">
@@ -388,7 +340,7 @@ const App: React.FC = () => {
         </header>
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {mainContent}
+            {renderMainContent()}
           </div>
         </main>
       </div>

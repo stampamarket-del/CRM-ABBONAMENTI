@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from 'react';
 import { Client, Product, Seller } from '../types';
 import { DownloadIcon, UploadIcon } from '../components/Icons';
@@ -11,8 +10,9 @@ interface SalvaPageProps {
 }
 
 const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, onRestore }) => {
-    const [isRestoring, setIsRestoring] = useState(false);
-    const [restoreError, setRestoreError] = useState<string | null>(null);
+    const [restoreFile, setRestoreFile] = useState<File | null>(null);
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
 
     const handleSave = useCallback(() => {
         try {
@@ -27,107 +27,110 @@ const SalvaPage: React.FC<SalvaPageProps> = ({ clients, products, sellers, onRes
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             const dateStr = new Date().toISOString().split('T')[0];
-            link.download = `crm_backup_${dateStr}.json`;
+            link.download = `crm_full_backup_${dateStr}.json`;
             link.href = url;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            alert('Modifiche salvate nel file di backup!');
         } catch (error) {
             console.error("Errore durante il salvataggio del backup:", error);
-            alert('Si è verificato un errore durante il salvataggio. Controlla la console per i dettagli.');
+            alert('Si è verificato un errore durante il salvataggio.');
         }
     }, [clients, products, sellers]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setFeedback(null);
         const file = event.target.files?.[0];
-        if (!file) return;
-
-        setIsRestoring(true);
-        setRestoreError(null);
+        if (file) {
+            setRestoreFile(file);
+        }
+    };
+    
+    const handleRestoreClick = () => {
+        if (!restoreFile) {
+            setFeedback({ type: 'error', message: 'Per favore, seleziona un file di backup prima.' });
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const text = e.target?.result as string;
                 const data = JSON.parse(text);
-
-                // Validate structure
-                if (Array.isArray(data.clients) && Array.isArray(data.products) && Array.isArray(data.sellers)) {
-                    if (window.confirm(`Sei sicuro di voler ripristinare i dati da questo file? L'operazione è irreversibile e sovrascriverà tutti i dati attuali.`)) {
-                        onRestore(data);
-                        alert('Dati ripristinati con successo!');
+                // Basic validation
+                if (data && Array.isArray(data.clients) && Array.isArray(data.products) && Array.isArray(data.sellers)) {
+                    onRestore(data);
+                    setFeedback({ type: 'success', message: 'Dati ripristinati con successo!' });
+                    if(document.getElementById('restore-file-input')) {
+                        (document.getElementById('restore-file-input') as HTMLInputElement).value = "";
                     }
+                    setRestoreFile(null);
                 } else {
-                    throw new Error("La struttura del file di backup non è valida. Devono essere presenti 'clients', 'products' e 'sellers'.");
+                    throw new Error('Formato del file di backup non valido.');
                 }
-            } catch (error: any) {
-                setRestoreError(`Errore durante il ripristino: ${error.message}`);
+            } catch (error) {
                 console.error("Errore durante il ripristino:", error);
-            } finally {
-                setIsRestoring(false);
-                // Reset file input to allow re-uploading the same file
-                event.target.value = '';
+                const message = error instanceof Error ? error.message : 'Si è verificato un errore durante la lettura del file.';
+                setFeedback({ type: 'error', message });
             }
         };
         reader.onerror = () => {
-             setRestoreError('Impossibile leggere il file selezionato.');
-             setIsRestoring(false);
-        }
-        reader.readAsText(file);
+            setFeedback({ type: 'error', message: 'Impossibile leggere il file.' });
+        };
+        reader.readAsText(restoreFile);
     };
 
     return (
         <div className="space-y-8 max-w-4xl mx-auto">
             <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900">Salva Modifiche e Ripristina</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Backup e Ripristino Dati</h1>
                 <p className="mt-2 text-gray-600">
-                    Salva lo stato corrente dell'applicazione in un file o ripristina da un backup precedente.
+                    Esporta o importa tutti i dati dell'applicazione da un singolo file JSON.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Save Card */}
-                <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Salva Modifiche su File</h2>
-                    <p className="text-gray-500 mb-4 text-sm">
-                        Crea un file di backup JSON con tutti i dati correnti.
-                    </p>
-                    <button
-                        onClick={handleSave}
-                        className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300"
-                    >
-                        <DownloadIcon className="w-5 h-5" />
-                        Salva Modifiche
-                    </button>
-                     <p className="text-xs text-gray-400 mt-4">
-                        Il file scaricato può essere conservato in un posto sicuro o caricato su un repository GitHub per tener traccia delle versioni.
-                    </p>
-                </div>
-
-                {/* Restore Card */}
-                <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Ripristina Dati da File</h2>
-                    <p className="text-gray-500 mb-6 text-sm">
-                        Seleziona un file di backup JSON per sovrascrivere i dati attuali. Questa azione non può essere annullata.
-                    </p>
-                    <label htmlFor="restore-file-input" className="w-full cursor-pointer flex items-center justify-center gap-2 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-300">
-                       <UploadIcon className="w-5 h-5" />
-                       {isRestoring ? 'Caricamento...' : 'Seleziona File di Backup'}
-                    </label>
-                    <input
-                        type="file"
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Esporta Tutti i Dati</h2>
+                <p className="text-gray-500 mb-4 text-sm">
+                    Crea un file di backup JSON con tutti i clienti, prodotti e venditori. Conservalo in un luogo sicuro.
+                </p>
+                <button
+                    onClick={handleSave}
+                    className="w-full max-w-xs flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300"
+                >
+                    <DownloadIcon className="w-5 h-5" />
+                    Esporta Backup
+                </button>
+            </div>
+            
+             <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center text-center">
+                <h2 className="text-xl font-bold text-gray-800 mb-2">Ripristina da Backup</h2>
+                <p className="text-gray-500 mb-4 text-sm">
+                    Importa dati da un file di backup JSON. <strong className="text-red-600">Attenzione: questo sovrascriverà tutti i dati correnti.</strong>
+                </p>
+                <div className="w-full max-w-xs space-y-4">
+                    <input 
                         id="restore-file-input"
-                        className="hidden"
-                        accept="application/json"
-                        onChange={handleFileChange}
-                        disabled={isRestoring}
+                        type="file" 
+                        accept=".json" 
+                        onChange={handleFileChange} 
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
-                    {restoreError && (
-                        <p className="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-md">{restoreError}</p>
-                    )}
+                    <button
+                        onClick={handleRestoreClick}
+                        disabled={!restoreFile}
+                        className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-orange-600 transition-colors duration-300 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                        <UploadIcon className="w-5 h-5" />
+                        Ripristina Dati
+                    </button>
                 </div>
+                {feedback && (
+                    <p className={`mt-4 text-sm font-medium ${feedback.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
+                        {feedback.message}
+                    </p>
+                )}
             </div>
         </div>
     );

@@ -13,8 +13,8 @@ export interface Client {
   vatNumber?: string;
   address: string;
   email: string;
-  iban: string;
-  otherInfo: string;
+  iban?: string;
+  otherInfo?: string;
   subscription: Subscription;
   subscriptionType: SubscriptionType;
   productId?: string;

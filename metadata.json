@@ -1,0 +1,5 @@
+{
+  "name": "Copy of CRM Gestione Abbonamenti",
+  "description": "Un'applicazione CRM per gestire gli abbonamenti dei clienti con timer per il conto alla rovescia e monitoraggio dei progressi. Aggiungi, visualizza e monitora i periodi di abbonamento dei clienti in modo efficiente.",
+  "requestFramePermissions": []
+}

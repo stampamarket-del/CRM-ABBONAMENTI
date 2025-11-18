@@ -10,11 +10,12 @@ import ProdottiPage from './pages/ProdottiPage';
 import VenditoriPage from './pages/VenditoriPage';
 import ReportsPage from './pages/ReportsPage';
 import BusinessPage from './pages/BusinessPage';
+import SalvaPage from './pages/SalvaPage';
 import { PlusCircleIcon, DownloadIcon, UploadIcon } from './components/Icons';
 import ImportClientModal from './components/ImportClientModal';
 import ClientFilterBar from './components/ClientFilterBar';
 
-type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business';
+type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business' | 'salva';
 
 const App: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([
@@ -199,6 +200,12 @@ const App: React.FC = () => {
 
     exportToCsv('clienti.csv', dataToExport);
   }, [clients, products, sellers, exportToCsv]);
+  
+  const restoreData = useCallback((data: { clients: Client[], products: Product[], sellers: Seller[] }) => {
+    setClients(data.clients || []);
+    setProducts(data.products || []);
+    setSellers(data.sellers || []);
+  }, []);
 
   const viewTitles: Record<View, string> = {
     dashboard: 'Dashboard',
@@ -207,6 +214,7 @@ const App: React.FC = () => {
     products: 'Prodotti',
     reports: 'Report Vendite',
     business: 'Analisi Business',
+    salva: 'Salva Modifiche',
   };
   
   const filteredAndSortedClients = useMemo(() => {
@@ -280,10 +288,12 @@ const App: React.FC = () => {
         return <ReportsPage clients={clients} products={products} sellers={sellers} />;
       case 'business':
         return <BusinessPage />;
+      case 'salva':
+        return <SalvaPage clients={clients} products={products} sellers={sellers} onRestore={restoreData} />;
       default:
         return null;
     }
-  }, [currentView, clients, products, sellers, deleteClient, addProduct, updateProduct, deleteProduct, addSeller, updateSeller, deleteSeller, filteredAndSortedClients, searchTerm, filterProductId, filterSellerId, sortOrder, filterSubscriptionType]);
+  }, [currentView, clients, products, sellers, deleteClient, addProduct, updateProduct, deleteProduct, addSeller, updateSeller, deleteSeller, filteredAndSortedClients, searchTerm, filterProductId, filterSellerId, sortOrder, filterSubscriptionType, restoreData]);
 
   return (
     <div className="flex h-screen bg-gray-100 text-gray-800">

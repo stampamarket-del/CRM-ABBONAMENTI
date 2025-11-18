@@ -1,7 +1,8 @@
-import React from 'react';
-import { DashboardIcon, UsersIcon, BriefcaseIcon, PackageIcon, BarChartIcon, CalculatorIcon } from './Icons';
 
-type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business';
+import React from 'react';
+import { DashboardIcon, UsersIcon, BriefcaseIcon, PackageIcon, BarChartIcon, CalculatorIcon, SaveIcon } from './Icons';
+
+type View = 'dashboard' | 'clients' | 'sellers' | 'products' | 'reports' | 'business' | 'salva';
 
 interface SidebarProps {
   currentView: View;
@@ -67,6 +68,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView }) => {
           label="Business"
           isActive={currentView === 'business'}
           onClick={() => setCurrentView('business')}
+        />
+        <NavItem
+          icon={<SaveIcon className="w-6 h-6" />}
+          label="Salva Modifiche"
+          isActive={currentView === 'salva'}
+          onClick={() => setCurrentView('salva')}
         />
       </nav>
     </div>

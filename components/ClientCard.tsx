@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Client, Product, Seller, SubscriptionType } from '../types';
 import SubscriptionTimer from './SubscriptionTimer';
@@ -25,6 +26,27 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onDelete, onEdit, produ
   
   const isNotStarted = new Date(client.subscription.startDate) > new Date();
 
+  const daysRemaining = Math.ceil((new Date(client.subscription.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  let badgeClass = 'bg-green-100 text-green-800';
+  let badgeText = `${daysRemaining} GG`;
+
+  if (isNotStarted) {
+    badgeClass = 'bg-blue-100 text-blue-800';
+    badgeText = 'FUTURO';
+  } else if (daysRemaining < 0) {
+    badgeClass = 'bg-red-100 text-red-800';
+    badgeText = `SCADUTO (${Math.abs(daysRemaining)}gg)`;
+  } else if (daysRemaining === 0) {
+    badgeClass = 'bg-orange-100 text-orange-800';
+    badgeText = 'OGGI';
+  } else if (daysRemaining <= 7) {
+    badgeClass = 'bg-red-100 text-red-800';
+    badgeText = `${daysRemaining} GG`;
+  } else if (daysRemaining <= 30) {
+    badgeClass = 'bg-yellow-100 text-yellow-800';
+    badgeText = `${daysRemaining} GG`;
+  }
+
   const subscriptionTypeLabels: Record<SubscriptionType, string> = {
     monthly: 'Mensile',
     annual: 'Annuale',
@@ -51,13 +73,18 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onDelete, onEdit, produ
         </div>
       )}
       <div className="p-6 flex-grow">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start mb-2">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">{client.name} {client.surname}</h3>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+                 <h3 className="text-2xl font-bold text-gray-900 leading-none">{client.name} {client.surname}</h3>
+                 <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide ${badgeClass}`}>
+                    {badgeText}
+                 </span>
+            </div>
             {client.companyName && <p className="text-md font-semibold text-gray-700">{client.companyName}</p>}
             <a href={`mailto:${client.email}`} className="text-sm text-blue-600 hover:underline">{client.email}</a>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-1">
             <button 
                 onClick={() => onEdit(client)}
                 className="text-gray-400 hover:text-blue-500 transition-colors p-1 rounded-full"

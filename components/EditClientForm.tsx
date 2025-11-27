@@ -1,16 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
 import { Client, Product, Seller, SubscriptionType } from '../types';
-import { XIcon } from './Icons';
+import { XIcon, Trash2Icon } from './Icons';
 
 interface EditClientFormProps {
   client: Client;
   onUpdateClient: (client: Client) => void;
+  onDelete: (clientId: string) => void;
   onClose: () => void;
   products: Product[];
   sellers: Seller[];
 }
 
-const EditClientForm: React.FC<EditClientFormProps> = ({ client, onUpdateClient, onClose, products, sellers }) => {
+const EditClientForm: React.FC<EditClientFormProps> = ({ client, onUpdateClient, onDelete, onClose, products, sellers }) => {
   const [formData, setFormData] = useState({
     name: client.name,
     surname: client.surname,
@@ -89,6 +91,13 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onUpdateClient,
     onClose();
   };
 
+  const handleDelete = () => {
+    if (window.confirm(`Sei sicuro di voler eliminare il cliente ${client.name} ${client.surname}? Questa azione non può essere annullata.`)) {
+      onDelete(client.id);
+      onClose(); // Explicitly close modal after delete, although App.tsx handles unmounting
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-full overflow-y-auto">
@@ -141,9 +150,19 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onUpdateClient,
               <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
             </div>
           </div>
-          <div className="pt-4 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">Annulla</button>
-            <button type="submit" className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Salva Modifiche</button>
+          <div className="pt-4 flex justify-between items-center gap-3">
+             <button
+                type="button"
+                onClick={handleDelete}
+                className="bg-red-100 text-red-700 font-semibold py-2 px-4 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-2"
+             >
+                <Trash2Icon className="w-5 h-5" />
+                Elimina Cliente
+             </button>
+            <div className="flex gap-3">
+                <button type="button" onClick={onClose} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">Annulla</button>
+                <button type="submit" className="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Salva Modifiche</button>
+            </div>
           </div>
         </form>
       </div>

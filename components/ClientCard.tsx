@@ -32,6 +32,12 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onDelete, onEdit, produ
   };
   const subscriptionLabel = subscriptionTypeLabels[client.subscriptionType] || 'N/D';
 
+  const handleDelete = () => {
+    if (window.confirm(`Sei sicuro di voler eliminare il cliente ${client.name} ${client.surname}? Questa azione non può essere annullata.`)) {
+      onDelete(client.id);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-[1.02] transition-transform duration-300 flex flex-col relative">
       {isExpiringSoon() && (
@@ -60,7 +66,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onDelete, onEdit, produ
                 <PencilIcon className="w-5 h-5" />
             </button>
             <button 
-                onClick={() => onDelete(client.id)}
+                onClick={handleDelete}
                 className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full"
                 aria-label="Elimina cliente"
             >

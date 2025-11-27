@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Client, Product, Seller, ActivityLog } from './types';
 import ClientList from './components/ClientList';
@@ -398,6 +399,7 @@ const App: React.FC = () => {
         <EditClientForm
           client={editingClient}
           onUpdateClient={updateClient}
+          onDelete={(id) => { deleteClient(id); setEditingClient(null); }}
           onClose={() => setEditingClient(null)}
           products={products}
           sellers={sellers}

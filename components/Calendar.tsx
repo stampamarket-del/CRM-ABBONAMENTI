@@ -21,6 +21,13 @@ const Calendar: React.FC<CalendarProps> = ({ events, onDateSelect, selectedDate 
     });
   };
 
+  const monthlyDeadlinesCount = useMemo(() => {
+      return events.filter(d => {
+          const date = new Date(d);
+          return date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
+      }).length;
+  }, [events, currentDate]);
+
   const renderHeader = () => {
     const monthFormat = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' });
     return (
@@ -28,7 +35,10 @@ const Calendar: React.FC<CalendarProps> = ({ events, onDateSelect, selectedDate 
         <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-gray-100" aria-label="Mese precedente">
           <ChevronLeftIcon className="w-5 h-5" />
         </button>
-        <h2 className="font-bold text-lg capitalize">{monthFormat.format(currentDate)}</h2>
+        <div className="text-center">
+             <h2 className="font-bold text-lg capitalize">{monthFormat.format(currentDate)}</h2>
+             <span className="text-xs text-gray-500 font-medium">{monthlyDeadlinesCount} scadenz{monthlyDeadlinesCount === 1 ? 'a' : 'e'}</span>
+        </div>
         <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-gray-100" aria-label="Mese successivo">
           <ChevronRightIcon className="w-5 h-5" />
         </button>
